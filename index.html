@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Tesouro Renda+ 2065</title>
+  <meta name="description" content="Simulador de cenários de IPCA para o Tesouro Renda+ 2065 com marcação a mercado e indicadores econômicos ao vivo." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="wrap">
+
+  <header class="reveal">
+    <div class="eyebrow">Simulador · Tesouro Direto</div>
+    <h1>Renda<span class="plus">+</span> <span class="year">2065</span></h1>
+    <p class="sub">Cenários de IPCA com marcação a mercado em caso de venda antecipada. Indicadores atualizados ao vivo.</p>
+  </header>
+
+  <div class="layout">
+  <div class="col-left">
+
+  <!-- INDICADORES AO VIVO -->
+  <div class="dash reveal" style="animation-delay:0.05s">
+    <div class="dash-head">
+      <div class="dash-title">Indicadores ao vivo</div>
+      <button class="refresh" id="refreshBtn" aria-label="Atualizar">
+        <span id="refreshLabel">atualizar</span>
+        <svg id="refreshIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>
+        </svg>
+      </button>
+    </div>
+    <div class="grid">
+      <div class="ind feature">
+        <div class="glow"></div>
+        <div class="lbl"><span class="dot load" id="dotTesouro"></span> Renda+ 2065 · taxa</div>
+        <div class="val skel" id="valTesouro">IPCA + —<span class="unit"></span></div>
+        <div class="meta" id="metaTesouro">carregando…</div>
+      </div>
+      <div class="ind">
+        <div class="lbl"><span class="dot load" id="dotIpca"></span> IPCA 12m</div>
+        <div class="val skel" id="valIpca">—<span class="unit">%</span></div>
+        <div class="meta" id="metaIpca">carregando…</div>
+      </div>
+      <div class="ind">
+        <div class="lbl"><span class="dot load" id="dotSelic"></span> Meta Selic</div>
+        <div class="val skel" id="valSelic">—<span class="unit">%</span></div>
+        <div class="meta" id="metaSelic">carregando…</div>
+      </div>
+      <div class="ind">
+        <div class="lbl"><span class="dot load" id="dotCdi"></span> CDI a.a.</div>
+        <div class="val skel" id="valCdi">—<span class="unit">%</span></div>
+        <div class="meta" id="metaCdi">carregando…</div>
+      </div>
+      <div class="ind">
+        <div class="lbl"><span class="dot load" id="dotDolar"></span> Dólar</div>
+        <div class="val skel" id="valDolar">R$ —</div>
+        <div class="meta" id="metaDolar">carregando…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENTRADAS -->
+  <section class="inputs reveal" style="animation-delay:0.1s">
+    <div>
+      <label class="field-label">Valor atual investido</label>
+      <div class="input-box">
+        <span class="prefix">R$</span>
+        <input id="valor" type="text" inputmode="decimal" value="10000" />
+      </div>
+    </div>
+
+    <div>
+      <label class="field-label">Tempo até resgate / venda</label>
+      <div class="input-box">
+        <input id="anos" type="text" inputmode="numeric" value="20" />
+        <span class="suffix">anos</span>
+      </div>
+      <p class="note">Conversão em renda: 15/12/2065 · <span id="anosConv">~39,6</span> anos a partir de hoje.</p>
+    </div>
+
+    <div>
+      <div class="field-row">
+        <label class="field-label" style="margin-bottom:0">IPCA simulado <span style="color:var(--faint)">(% a.a.)</span></label>
+      </div>
+      <div class="input-box">
+        <input id="ipca" type="text" inputmode="decimal" value="4,37" />
+        <span class="suffix">%</span>
+      </div>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div>
+      <div class="field-row">
+        <label class="field-label" style="margin-bottom:0">Taxa real contratada <span style="color:var(--faint)">(% a.a.)</span></label>
+        <span class="field-hint" id="hintContratada">ao vivo —</span>
+      </div>
+      <div class="input-box">
+        <span class="prefix">IPCA +</span>
+        <input id="contratada" type="text" inputmode="decimal" value="6,97" />
+        <span class="suffix">%</span>
+      </div>
+      <p class="note">Taxa travada no momento da compra.</p>
+    </div>
+
+    <div>
+      <div class="field-row">
+        <label class="field-label" style="margin-bottom:0">Taxa real na venda <span style="color:var(--faint)">(% a.a.)</span></label>
+        <button class="field-action" id="resetVenda">= contratada</button>
+      </div>
+      <div class="input-box">
+        <span class="prefix">IPCA +</span>
+        <input id="venda" type="text" inputmode="decimal" value="6,97" />
+        <span class="suffix">%</span>
+      </div>
+      <p class="note">Taxa de mercado projetada na venda. Maior que a contratada → perda na marcação. Menor → ganho.</p>
+    </div>
+  </section>
+  </div><!-- /col-left -->
+
+  <div class="col-right">
+
+  <!-- RESULTADO PRINCIPAL -->
+  <div class="hero reveal" style="animation-delay:0.15s">
+    <div class="glow"></div>
+    <div class="cap" id="heroCap">Valor de venda (líq.)</div>
+    <div class="big" id="heroBig">R$ —</div>
+    <div class="row">
+      <span class="k">Bruto</span><span class="gold" id="heroBruto">R$ —</span>
+      <span style="color:var(--fainter)">·</span>
+      <span class="k">IR</span><span class="red" id="heroIr">−R$ —</span>
+    </div>
+  </div>
+
+  <!-- MARCAÇÃO A MERCADO -->
+  <div class="card reveal" id="marcacaoCard" style="animation-delay:0.2s">
+    <div class="card-title">Efeito da marcação a mercado</div>
+    <div class="two">
+      <div>
+        <div class="sm">Se vendido na curva</div>
+        <div class="lg" id="curvaVal" style="color:var(--text)">R$ —</div>
+      </div>
+      <div>
+        <div class="sm" id="deltaLbl">Δ taxa: —</div>
+        <div class="lg" id="efeitoVal">R$ —</div>
+      </div>
+    </div>
+    <p class="note" id="marcacaoNote" style="margin-top:12px"></p>
+  </div>
+
+  <!-- PODER DE COMPRA REAL -->
+  <div class="card reveal" style="animation-delay:0.25s">
+    <div class="card-title">Poder de compra <span class="soft">· em R$ de hoje</span></div>
+    <div class="italic-big" id="realVal">R$ —</div>
+    <div class="real-row">
+      Ganho real: <span id="realGanho">—</span>
+      <span style="color:var(--fainter);margin:0 8px">·</span>
+      <span style="color:var(--muted)">Curva</span> <span class="gold" id="taxaComp" style="color:var(--gold)">—</span>
+    </div>
+  </div>
+
+  <!-- GRÁFICO -->
+  <div class="card reveal" style="animation-delay:0.3s">
+    <div class="card-title">Trajetória do investimento</div>
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="legend">
+      <div class="li"><span class="sw" style="background:var(--gold)"></span> Na curva (líq.)</div>
+      <div class="li"><span class="sw" id="legendMarc" style="background:var(--muted)"></span> <span id="legendMarcLbl">Com marcação</span></div>
+    </div>
+  </div>
+
+  <!-- RODAPÉ -->
+  <footer class="reveal" style="animation-delay:0.35s">
+    <p><span class="k">Marcação a mercado:</span> o Renda+ tem fluxo de 240 pagamentos mensais a partir de 15/12/2065 (aproximado como anuidade de 20 anos). Vender antes da conversão precifica esse fluxo pela taxa de mercado vigente.</p>
+    <p><span class="k">Premissas:</span> IR de 15% sobre ganhos (zero em prejuízo). IPCA e taxas constantes no período. Taxa de custódia da B3 não incluída. Sem aportes mensais.</p>
+    <p class="src">Fontes ao vivo: Banco Central (API SGS) para IPCA, Selic e CDI; API PTAX/BCB para dólar (cotações intraday). A taxa do Tesouro Renda+ 2065 é salva localmente — informe-a no campo abaixo ou consulte <a href="https://www.tesourodireto.com.br/titulos/precos-e-taxas.htm" target="_blank" rel="noopener">tesourodireto.com.br</a>. Atualizado em <span id="updatedAt">—</span>.</p>
+    <p class="src">Não constitui recomendação de investimento.</p>
+  </footer>
+  </div><!-- /col-right -->
+  </div><!-- /layout -->
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="js/helpers.js"></script>
+<script src="js/model.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
