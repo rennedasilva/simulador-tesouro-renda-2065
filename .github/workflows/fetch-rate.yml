@@ -1,0 +1,60 @@
+name: Atualiza taxa Renda+ 2065
+
+on:
+  schedule:
+    - cron: '0 12 * * 1-5'   # 9h BRT (UTC-3), dias úteis
+  workflow_dispatch:           # disparo manual pelo GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache node_modules e browser
+        uses: actions/cache@v4
+        with:
+          path: |
+            scripts/node_modules
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-pw-${{ hashFiles('scripts/package.json') }}
+
+      - name: Instala dependências
+        working-directory: scripts
+        run: npm install
+
+      - name: Instala Chromium
+        working-directory: scripts
+        run: npx playwright install --with-deps chromium
+
+      - name: Busca taxa no Tesouro Direto
+        run: node scripts/fetch-rate.js
+        continue-on-error: true
+
+      - name: Salva screenshot para debug
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-${{ github.run_id }}
+          path: scripts/screenshot.png
+          retention-days: 5
+
+      - name: Commit se taxa mudou
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/rate.json
+          if git diff --cached --quiet; then
+            echo "Sem mudanças na taxa"
+          else
+            git commit -m "chore: atualiza taxa Renda+ 2065 [skip ci]"
+            git push
+          fi

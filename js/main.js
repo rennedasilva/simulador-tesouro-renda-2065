@@ -9,7 +9,7 @@ async function refreshAll() {
   // Tesouro não tem API ao vivo — deixa o dot 'man' intacto
   ['Ipca', 'Selic', 'Cdi', 'Dolar'].forEach((p) => { $('dot' + p).className = 'dot load'; });
 
-  await Promise.allSettled([loadBCB()]);
+  await Promise.allSettled([loadBCB(), fetchLiveRate()]);
 
   $('updatedAt').textContent = new Date().toLocaleString('pt-BR', {
     dateStyle: 'short',

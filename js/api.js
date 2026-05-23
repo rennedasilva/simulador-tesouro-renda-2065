@@ -55,6 +55,39 @@ async function fetchDolar() {
   return { valor: r.valor, meta: `PTAX · ${r.data}` };
 }
 
+// ---- Taxa Tesouro Renda+ 2065 — rate.json gerado pelo GitHub Actions ----
+// O workflow .github/workflows/fetch-rate.yml roda diariamente (dias úteis, 9h BRT)
+// com Playwright + stealth, captura a taxa do site oficial e commita data/rate.json.
+// Se o fetch falhar ou o arquivo não existir, cai silenciosamente para o localStorage.
+
+async function fetchLiveRate() {
+  try {
+    const res = await fetch('data/rate.json', { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return;
+    const d = await res.json();
+    if (!d.taxa || d.taxa <= 0) return;
+
+    const taxaStr = d.taxa.toFixed(2).replace('.', ',');
+
+    $('dotTesouro').className = 'dot ok';
+    $('valTesouro').innerHTML = `IPCA + ${taxaStr}<span class="unit">%</span>`;
+    $('metaTesouro').innerHTML =
+      `automático · ${d.data} · <a href="${TESOURO_URL}" target="_blank" rel="noopener">conferir</a>`;
+    $('hintContratada').textContent = `ao vivo ${taxaStr}%`;
+
+    if (!window._userTouchedRates) {
+      $('contratada').value = taxaStr;
+      $('venda').value      = taxaStr;
+      recalc();
+    }
+
+    // Persiste localmente para uso offline
+    localStorage.setItem(LS_RATE_KEY, d.taxa.toString());
+  } catch {
+    // Falha silenciosa — fallback já está visível via initTesouro()
+  }
+}
+
 // ---- Taxa Tesouro Renda+ 2065 (modo manual + localStorage) ----
 // O endpoint oficial da Tesouro Direto retornou 410 Gone em mai/2026.
 // O site está protegido por Cloudflare WAF com managed challenge (JS obrigatório),
