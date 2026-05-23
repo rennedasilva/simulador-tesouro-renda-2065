@@ -65,9 +65,14 @@ const LS_RATE_KEY = 'tr2065_taxa';
 const TESOURO_URL = 'https://www.tesourodireto.com.br/titulos/precos-e-taxas.htm';
 
 function initTesouro() {
-  const saved = localStorage.getItem(LS_RATE_KEY);
-  const rate  = saved ? parseFloat(saved) : null;
-  const taxaStr = rate ? rate.toFixed(2).replace('.', ',') : null;
+  const saved     = localStorage.getItem(LS_RATE_KEY);
+  const savedRate = saved ? parseFloat(saved) : null;
+
+  // Fallback: lê o valor padrão do próprio input quando não há dado salvo
+  const inputVal   = parseNum($('contratada').value);
+  const displayRate = savedRate ?? (inputVal > 0 ? inputVal : null);
+  const taxaStr    = displayRate != null ? displayRate.toFixed(2).replace('.', ',') : null;
+  const fromStorage = savedRate != null;
 
   $('dotTesouro').className = 'dot man';
   $('valTesouro').classList.remove('skel');
@@ -75,13 +80,17 @@ function initTesouro() {
     ? `IPCA + ${taxaStr}<span class="unit">%</span>`
     : `IPCA + —<span class="unit">%</span>`;
   $('metaTesouro').innerHTML = taxaStr
-    ? `salvo · <a href="${TESOURO_URL}" target="_blank" rel="noopener">conferir agora</a>`
+    ? fromStorage
+      ? `salvo · <a href="${TESOURO_URL}" target="_blank" rel="noopener">conferir agora</a>`
+      : `padrão · <a href="${TESOURO_URL}" target="_blank" rel="noopener">informe a taxa real</a>`
     : `informe a taxa · <a href="${TESOURO_URL}" target="_blank" rel="noopener">ver no Tesouro Direto</a>`;
 
-  if (taxaStr && !window._userTouchedRates) {
-    $('contratada').value = taxaStr;
-    $('venda').value      = taxaStr;
-    $('hintContratada').textContent = `salvo ${taxaStr}%`;
+  if (!window._userTouchedRates) {
+    if (fromStorage) {
+      $('contratada').value = taxaStr;
+      $('venda').value      = taxaStr;
+    }
+    $('hintContratada').textContent = fromStorage ? `salvo ${taxaStr}%` : `padrão ${taxaStr}%`;
   }
 }
 
